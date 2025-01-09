@@ -151,8 +151,8 @@ MonoBehaviour:
   baseDropRateR: 0.9
   baseDropRateSR: 0.09
   baseDropRateSSR: 0.01
-  pitySRThreshold: 10
-  pitySSRThreshold: 100
+  pitySR: 10
+  pitySSR: 100
   ssrDropRateCurve:
     serializedVersion: 2
     m_Curve:
@@ -186,15 +186,16 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  gachaItems:
+  gachaPool:
   - {fileID: 11400000, guid: 0299f37bd7797d74ca7747684b980bfb, type: 2}
-  - {fileID: 11400000, guid: 90c4882dff9cdb844b61055871054177, type: 2}
   - {fileID: 11400000, guid: 94685002b4c6f2a49ab6accbadbb7326, type: 2}
   - {fileID: 11400000, guid: 4efb83515bc46b148922798b747205d6, type: 2}
+  - {fileID: 11400000, guid: 90c4882dff9cdb844b61055871054177, type: 2}
   - {fileID: 11400000, guid: 6d987334508356b46966e9a9dda45f41, type: 2}
   - {fileID: 11400000, guid: df3cba65cef24f74abf9cc7732422e58, type: 2}
   pitySRCounter: 0
   pitySSRCounter: 0
+  gachaTokens: 150
 --- !u!4 &137491792
 Transform:
   m_ObjectHideFlags: 0

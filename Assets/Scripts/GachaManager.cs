@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class GachaSystem : MonoBehaviour
 {
@@ -10,27 +10,39 @@ public class GachaSystem : MonoBehaviour
         SSR  // Super Rare
     }
 
-    [Header("Gacha Settings")]
+    [Header("Base Gacha Drop Rates")]
     public float baseDropRateR = 0.9f;  // Base drop rate for Rarity "R"
     public float baseDropRateSR = 0.09f; // Base drop rate for Rarity "SR"
     public float baseDropRateSSR = 0.01f; // Base drop rate for Rarity "SSR"
 
     [Header("Pity System")]
-    public int pitySRThreshold = 10;   // Every 10th pull guarantees SR
-    public int pitySSRThreshold = 100; // Every 100th pull guarantees SSR
+    public int pitySR = 10;   // Every 10th pull guarantees SR
+    public int pitySSR = 100; // Every 100th pull guarantees SSR
 
     [Header("SSR Drop Rate Curve")]
     [Tooltip("The curve defines how SSR drop rate increases with pity.")]
     public AnimationCurve ssrDropRateCurve;  // Curve for SSR drop rate based on pity
 
-    [Header("Items")]
-    public List<GachaItem> gachaItems; // List of GachaItems to be used in the gacha pull (ScriptableObjects)
+    [Header("Gacha Pool")]
+    public List<GachaItem> gachaPool; // List of GachaItems to be used in the gacha pull (ScriptableObjects)
 
     public int pitySRCounter = 0;  // Counter for SR pity
     public int pitySSRCounter = 0; // Counter for SSR pity
 
+    public int gachaTokens;
+
     public List<GachaItem> PerformPull(int pullCount)
     {
+        if (gachaTokens < pullCount)
+        {
+            //Implement not enough tokens functionality here. Redirect to buy more tokens.
+            Debug.Log("Not enough tokens!");
+            return null;
+        }
+
+        gachaTokens -= pullCount;
+        Debug.Log("Remaining tokens: "+gachaTokens);
+
         List<GachaItem> pulledItems = new List<GachaItem>();
 
         for (int i = 0; i < pullCount; i++)
@@ -67,28 +79,25 @@ public class GachaSystem : MonoBehaviour
         }
 
         // Apply pity guarantees
-        if (pitySSRCounter >= pitySSRThreshold)
+        if (pitySSRCounter >= pitySSR)
         {
-            rarity = Rarity.SSR; 
-            pitySSRCounter = 0;  
+            rarity = Rarity.SSR;
+            pitySSRCounter = 0;
         }
-        else if (pitySRCounter >= pitySRThreshold)
+        else if (pitySRCounter >= pitySR)
         {
-            rarity = Rarity.SR; 
-            pitySRCounter = 0; 
+            rarity = Rarity.SR;
+            pitySRCounter = 0;
         }
 
         // Get item based on determined rarity
-        return GetRandomItemByRarity(rarity);
+        return GetRandomItemFromPool(rarity);
     }
 
     private Rarity DetermineRarity(float randomValue)
     {
         // Adjust SSR drop rate using the curve
         float adjustedSSRRate = baseDropRateSSR + ssrDropRateCurve.Evaluate(pitySSRCounter);
-
-        Debug.LogError("SSR Rate: "+adjustedSSRRate);
-        Debug.LogError("Current Rate Value:" +randomValue);
 
         if (randomValue < adjustedSSRRate)
         {
@@ -104,11 +113,11 @@ public class GachaSystem : MonoBehaviour
         }
     }
 
-    private GachaItem GetRandomItemByRarity(Rarity rarity)
+    private GachaItem GetRandomItemFromPool(Rarity rarity)
     {
         List<GachaItem> availableItems = new List<GachaItem>();
 
-        foreach (var item in gachaItems)
+        foreach (var item in gachaPool)
         {
             if (item.rarity == rarity)
             {
@@ -118,5 +127,14 @@ public class GachaSystem : MonoBehaviour
 
         int randomIndex = Random.Range(0, availableItems.Count);
         return availableItems[randomIndex];
+    }
+    public void AddGachaTokens(int addAmount)
+    {
+        gachaTokens += addAmount;
+    }
+
+    public void SetGachaTokens(int setAmount)
+    {
+        gachaTokens = setAmount;
     }
 }
