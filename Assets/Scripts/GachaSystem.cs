@@ -16,9 +16,9 @@ public class GachaSystem : MonoBehaviour
 
     public enum Rarity //Rarities enum
     {
-        R,   // Common
-        SR,  // Rare
-        SSR  // Super Rare
+        R,   // Rare
+        SR,  // Super Rare
+        SSR  // Super+ Rare
     }
 
     [Header("Base Gacha Drop Rates")]
