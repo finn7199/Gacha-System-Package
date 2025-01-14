@@ -1,9 +1,20 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class GachaSystem : MonoBehaviour
 {
-    public enum Rarity
+    public static GachaSystem Instance { get; private set; }
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
+
+    public enum Rarity //Rarities enum
     {
         R,   // Common
         SR,  // Rare
@@ -11,25 +22,31 @@ public class GachaSystem : MonoBehaviour
     }
 
     [Header("Base Gacha Drop Rates")]
+    [Tooltip("レアリティ「R」のドロップ率")]
     public float baseDropRateR = 0.9f;  // Base drop rate for Rarity "R"
+    [Tooltip("レアリティ「SR」のドロップ率")]
     public float baseDropRateSR = 0.09f; // Base drop rate for Rarity "SR"
+    [Tooltip("レアリティ「SSR」のドロップ率")]
     public float baseDropRateSSR = 0.01f; // Base drop rate for Rarity "SSR"
 
     [Header("Pity System")]
+    [Tooltip("SR保証に必要な最大ガチャ数")]
     public int pitySR = 10;   // Every 10th pull guarantees SR
+    [Tooltip("SSR保証に必要な最大ガチャ数")]
     public int pitySSR = 100; // Every 100th pull guarantees SSR
 
     [Header("SSR Drop Rate Curve")]
-    [Tooltip("The curve defines how SSR drop rate increases with pity.")]
+    [Tooltip("The curve defines how SSR drop rate increases with pity (この曲線は、ガチャをすることでSSRのドロップ率がどのように上昇するかを定義している。)")]
     public AnimationCurve ssrDropRateCurve;  // Curve for SSR drop rate based on pity
 
     [Header("Gacha Pool")]
+    [Tooltip("GachaItemのリスト")]
     public List<GachaItem> gachaPool; // List of GachaItems to be used in the gacha pull (ScriptableObjects)
 
-    public int pitySRCounter = 0;  // Counter for SR pity
-    public int pitySSRCounter = 0; // Counter for SSR pity
+    private int pitySRCounter = 0;  // Counter for SR pity
+    private int pitySSRCounter = 0; // Counter for SSR pity
 
-    public int gachaTokens;
+    private int gachaTokens;
 
     public List<GachaItem> PerformPull(int pullCount)
     {
