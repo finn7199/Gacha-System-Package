@@ -193,9 +193,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 90c4882dff9cdb844b61055871054177, type: 2}
   - {fileID: 11400000, guid: 6d987334508356b46966e9a9dda45f41, type: 2}
   - {fileID: 11400000, guid: df3cba65cef24f74abf9cc7732422e58, type: 2}
-  pitySRCounter: 0
-  pitySSRCounter: 0
-  gachaTokens: 150
+  raritiesList:
+  - {fileID: 11400000, guid: 5734508ecfe6c9e45b5b77967f125279, type: 2}
+  - {fileID: 11400000, guid: bbc7f625512d1294e909025430d4517e, type: 2}
+  - {fileID: 11400000, guid: 75290822f1432db4c82b2085463b76ad, type: 2}
 --- !u!4 &137491792
 Transform:
   m_ObjectHideFlags: 0
@@ -841,7 +842,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c37db6f6138ff434db60c70d308847f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gachaSystem: {fileID: 137491791}
 --- !u!114 &1824537144
 MonoBehaviour:
   m_ObjectHideFlags: 0

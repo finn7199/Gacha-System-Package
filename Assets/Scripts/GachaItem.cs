@@ -1,9 +1,9 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "GachaItem", menuName = "Gacha System/GachaItem")]
+[CreateAssetMenu(fileName = "Gacha Item", menuName = "Gacha System/GachaItem")]
 public class GachaItem : ScriptableObject
 {
     public string itemName;
-    public GachaSystem.Rarity rarity;  
+    public GachaRarity rarity;  
     public Sprite itemImage;  
 }
