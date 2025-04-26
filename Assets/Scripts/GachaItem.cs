@@ -4,6 +4,8 @@ using UnityEngine;
 public class GachaItem : ScriptableObject
 {
     public string itemName;
-    public GachaSystem.Rarity rarity;  
-    public Sprite itemImage;  
+
+    [Tooltip("Reference to the rarity ScriptableObject")]
+    public GachaRarity rarity;
+    public Sprite itemImage;
 }
