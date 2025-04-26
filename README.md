@@ -1,12 +1,12 @@
-# Gacha System Unity Package
+# 🎲 Gacha System Unity Package
 
 A customizable gacha system for Unity, perfect for any project needing a gacha mechanic. This system provides flexible pull options, rarity configurations, and planned support for future enhancements.
 
 ---
 
-## Features
+## 	✨ Features
 
-### Current Features
+### 🛠️ Current Features
 - **Custom Pull Counts**: Perform pulls of any size, from single pulls to multi pulls (e.g., 1, 2, 10, ... n).
 - **Configurable Pity System**: Configure thresholds and drop rates directly from the Inspector.
 - **Scriptable Objects for Items**: Add gacha items like characters or weapons with minimal effort.
@@ -18,7 +18,7 @@ A customizable gacha system for Unity, perfect for any project needing a gacha m
 
 ---
 
-### Upcoming Features (Planned in Future Updates)
+### 🔮 Upcoming Features
 1. **Firebase Integration**:
    - Store and manage gacha results, user pulls, and token data securely in the cloud.
 2. **Inspector-Friendly Enhancements**:
@@ -26,37 +26,38 @@ A customizable gacha system for Unity, perfect for any project needing a gacha m
 
 ---
 
-## How to Use
+## 🚀 How to Use
 
 ### Setup Instructions
 
-### 1. Download the Package
+### 📦 Download the Package
 - Find the latest releases under the [Releases](https://github.com/finn7199/Gacha-System-Package/releases) section.
 - Import the downloaded package into your Unity project.
 
-### 2. Add the Gacha System Script
+### 🏗️ Add the Gacha System Script
 
 -   Create an empty GameObject in your scene and name it **GachaManager**.
 -   Attach the `GachaSystem.cs` script to this GameObject.
 
-### 3. Create Gacha Items
+### 🧩 Create Gacha Items
 
 -   Use **Scriptable Objects** to define your gacha items:
     1.  Right-click in the Project window.
     2.  Go to **Create > Gacha System > Gacha Item**.
     3.  Fill out the fields (e.g., item name & rarity) in the Inspector.
 
-### 4. (V1.1.0) Create Custom Rarities
+### 🎨 (V1.1.0) Create Custom Rarities
+
 - Right-click in the Project window.
 - Go to **Create > Gacha System > Gacha Rarity**.
 - Define custom rarity names and drop rates.
 - Add new rarities to the system without modifying the core code!
-- 
-### 5. Add Gacha Items & Rarities to the Pool
+  
+### 🧺 Add Items and Rarities to the Pool
 
 -   In the **GachaManager**, add all your created Gacha Items and Rarities to the list in the Inspector.
 
-### 6. Perform Pulls
+### 🎯 Perform Pulls
 
 -   Use the following method to perform gacha pulls:    
     `GachaSystem.Instance.PerformPull(n);` 
@@ -76,12 +77,12 @@ A customizable gacha system for Unity, perfect for any project needing a gacha m
  
 
 ----------
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
 
 ----------
-## Contributions & Feedback
+## 📢 Contributions & Feedback
 
 Found a bug? Have a feature suggestion?  
 Feel free to open an [Issue](https://github.com/finn7199/Gacha-System-Package/issues) or submit a [Pull Request](https://github.com/finn7199/Gacha-System-Package/pulls)!
