@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: raiden
   m_EditorClassIdentifier: 
   itemName: raiden
-  rarity: {fileID: 11400000, guid: 75290822f1432db4c82b2085463b76ad, type: 2}
+  rarity: {fileID: 11400000, guid: c9638d662c63b2e428fd1716d87de7aa, type: 2}
   itemImage: {fileID: 0}

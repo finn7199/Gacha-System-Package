@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: R
   m_EditorClassIdentifier: 
   rarityName: R
+  rarityTier: 1
   baseDropRate: 0.9
-  pityThreshold: 0
-  useDropRateCurve: 0
+  usePitySystem: 0
+  pityPullCount: 10
+  useDynamicRate: 0
   dropRateCurve:
     serializedVersion: 2
     m_Curve: []

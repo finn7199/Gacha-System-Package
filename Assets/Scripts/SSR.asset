@@ -10,12 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8229a304fd60060449f48095863095f9, type: 3}
-  m_Name: SSR
+  m_Name: SSr
   m_EditorClassIdentifier: 
   rarityName: SSR
+  rarityTier: 3
   baseDropRate: 0.01
-  pityThreshold: 100
-  useDropRateCurve: 1
+  usePitySystem: 1
+  pityPullCount: 100
+  useDynamicRate: 1
   dropRateCurve:
     serializedVersion: 2
     m_Curve:
@@ -29,19 +31,19 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0.33333334
     - serializedVersion: 3
-      time: 80
+      time: 0.8
       value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 136
+      inSlope: -0
+      outSlope: 5.0000005
+      tangentMode: 69
       weightedMode: 0
       inWeight: 0.33333334
       outWeight: 0.33333334
     - serializedVersion: 3
-      time: 100
+      time: 1
       value: 1
-      inSlope: 0.05
-      outSlope: 0.05
+      inSlope: 5.0000005
+      outSlope: 5.0000005
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334

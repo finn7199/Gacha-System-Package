@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: bennet
   m_EditorClassIdentifier: 
   itemName: benny
-  rarity: {fileID: 11400000, guid: bbc7f625512d1294e909025430d4517e, type: 2}
+  rarity: {fileID: 11400000, guid: 059fc563817882140b4bbd4911c81a1e, type: 2}
   itemImage: {fileID: 0}
