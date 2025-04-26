@@ -8,26 +8,20 @@ A customizable gacha system for Unity, perfect for any project needing a gacha m
 
 ### Current Features
 - **Custom Pull Counts**: Perform pulls of any size, from single pulls to multi pulls (e.g., 1, 2, 10, ... n).
-- **Three Rarities**: 
-  - **R** (rare)
-  - **SR** (super rare)
-  - **SSR** (super+ rare)  
-- **Configurable Pity System**:
-  - SR and SSR pity counters are adjustable via the Unity Inspector:
-    - **SR Pity**: Default = every 10 pulls.
-    - **SSR Pity**: Default = every 100 pulls.
-    - Configure thresholds and drop rates directly from the Inspector.
+- **Configurable Pity System**: Configure thresholds and drop rates directly from the Inspector.
 - **Scriptable Objects for Items**: Add gacha items like characters or weapons with minimal effort.
-- Support for SSR rate curves to dynamically adjust drop rates.
+- **Custom Rarity Support (New!)**  
+  Define your **own rarities** by creating new Rarity ScriptableObjects:
+  - Set custom names, drop rates, and order.
+  - No need to modify the core code — just create and configure your rarities via the Inspector!
+- Support for dynamic curves to adjust drop rates.
 
 ---
 
 ### Upcoming Features (Planned in Future Updates)
-1. **Custom Rarity Support**:
-   - Add your own rarity levels beyond R, SR, and SSR with custom drop rates.
-2. **Firebase Integration**:
+1. **Firebase Integration**:
    - Store and manage gacha results, user pulls, and token data securely in the cloud.
-3. **Inspector-Friendly Enhancements**:
+2. **Inspector-Friendly Enhancements**:
    - Dedicated Unity Editor tools for setting up gacha configurations faster.
 
 ---
@@ -45,23 +39,22 @@ A customizable gacha system for Unity, perfect for any project needing a gacha m
 -   Create an empty GameObject in your scene and name it **GachaManager**.
 -   Attach the `GachaSystem.cs` script to this GameObject.
 
-### 3. Configure the Gacha System
-
--   Select the **GachaManager** GameObject and set up the following in the Unity Inspector:
-    -   **Base Drop Rates**: Define the drop rates for R, SR, and SSR rarities.
-    -   **Pity Thresholds**: Configure the SR and SSR pity counts (e.g., 10 pulls for SR and 100 pulls for SSR).
-    -   **SSR Rate Curve**: Adjust the curve to set how the SSR drop rate increases as pity progresses.
-
-### 4. Create Gacha Items
+### 3. Create Gacha Items
 
 -   Use **Scriptable Objects** to define your gacha items:
     1.  Right-click in the Project window.
     2.  Go to **Create > Gacha System > Gacha Item**.
     3.  Fill out the fields (e.g., item name & rarity) in the Inspector.
 
-### 5. Add Gacha Items to the Pool
+### 4. (V1.1.0) Create Custom Rarities
+- Right-click in the Project window.
+- Go to **Create > Gacha System > Gacha Rarity**.
+- Define custom rarity names and drop rates.
+- Add new rarities to the system without modifying the core code!
+- 
+### 5. Add Gacha Items & Rarities to the Pool
 
--   In the **GachaManager**, add all your created Gacha Items to the **Gacha Pool** list in the Inspector.
+-   In the **GachaManager**, add all your created Gacha Items and Rarities to the list in the Inspector.
 
 ### 6. Perform Pulls
 
@@ -86,3 +79,9 @@ A customizable gacha system for Unity, perfect for any project needing a gacha m
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+
+----------
+## Contributions & Feedback
+
+Found a bug? Have a feature suggestion?  
+Feel free to open an [Issue](https://github.com/finn7199/Gacha-System-Package/issues) or submit a [Pull Request](https://github.com/finn7199/Gacha-System-Package/pulls)!
