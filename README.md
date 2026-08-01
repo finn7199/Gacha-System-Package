@@ -15,6 +15,29 @@ A customizable gacha system for Unity, perfect for any project needing a gacha m
   - Set custom names, drop rates, and order.
   - No need to modify the core code — just create and configure your rarities via the Inspector!
 - Support for dynamic curves to adjust drop rates.
+- **Live rate preview**: the GachaManager Inspector shows a table of every rarity's actual pull chance, so you can see your real odds without doing any math.
+- **Tier assist**: each Rarity asset shows every tier used across the project so you can't accidentally leave two rarities colliding on the same number, plus a one-click "use next free tier" button. The GachaManager Inspector can also renumber tiers to match your list order.
+
+---
+
+## How Drop Rates Work
+
+Each rarity's **Drop Rate** is checked **from rarest to most common**, one coin flip at a time — it is *not* a slice of a 100% pie, and your rarities do **not** need to add up to 100%.
+
+For example, with R = 90%, SR = 9%, SSR = 1%:
+1. First, the SSR check runs: 1% chance to stop here.
+2. If SSR didn't hit, the SR check runs: 9% chance to stop here.
+3. If neither hit, you get R.
+
+Your **most common rarity** (the one with the lowest Tier number) doesn't get its own check at all — it's simply whatever's left after every rarer rarity's check fails. You can leave its Drop Rate slider at any value; it has no effect. The GachaManager Inspector's rate table shows you the *actual* chance each rarity has once this rolls out (SSR 1%, SR 8.91%, R 90.09% in the example above) so you never have to compute it by hand.
+
+---
+
+## Rarity Tiers
+
+Only the **relative order** of `Tier` matters — 1/2/3 behaves identically to 10/20/30, as long as the numbers are in the right order. But leaving two rarities on the same Tier (including the default of 0) isn't harmless: it also makes those two rarities reset each other's Pity every time either one is pulled, and if every rarity is left at the same Tier, Pity never triggers at all.
+
+Each Rarity asset's Inspector shows every Tier already used across your project, so you can spot collisions and pick a free number without guessing. If you'd rather not type numbers at all, drag your rarities into order (most common at the top) in the GachaManager's Available Rarities list, then click **Renumber Tiers from List Order**.
 
 ---
 
@@ -71,9 +94,8 @@ A customizable gacha system for Unity, perfect for any project needing a gacha m
 
 -   To trigger pulls from a button click:
     1.  Add a UI Button to your scene.
-    2.  Attach the `GachaTest.cs` script on to UI Manager.
-    3.  Attach the script to the Button and link the `PerformTestPull(int n)` method to the button's **OnClick()** event.
-    4.  Set the number on pulls for that button.
+    2.  Add a script with a method that calls `GachaSystem.Instance.PerformPull(n)` and link it to the button's **OnClick()** event.
+    3.  Set the number of pulls for that button.
  
 
 ----------

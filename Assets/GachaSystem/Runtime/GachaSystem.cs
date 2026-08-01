@@ -82,7 +82,8 @@ public class GachaSystem : MonoBehaviour
         // baseDropRate is a conditional "chance given no rarer tier already hit" rather than a
         // marginal probability. These don't need to sum to 1, but a non-lowest tier sitting at
         // or above 1.0 will make every tier below it unreachable except via its own pity.
-        var lowestTier = validRarities.OrderBy(r => r.rarityTier).FirstOrDefault();
+        var marginals = GachaRates.ComputeMarginals(validRarities);
+        var lowestTier = marginals.FirstOrDefault(m => m.isLeftoverTier).rarity;
         foreach (var rarity in validRarities)
         {
             if (rarity != lowestTier && rarity.baseDropRate >= 1f)
@@ -97,29 +98,37 @@ public class GachaSystem : MonoBehaviour
             Debug.LogWarning($"[GachaSystem] Multiple rarities share the name '{group.Key}'. GetPityStatus() will merge them.");
         }
 
-        foreach (var rarity in validRarities)
+        foreach (var group in GachaRates.FindDuplicateTiers(validRarities))
         {
-            float currentDynamic = 0f;
-            float maxDynamic = 0f;
+            Debug.LogWarning($"[GachaSystem] Multiple rarities share Tier {group.Key} ({string.Join(", ", group.Select(r => r.rarityName))}). They will reset each other's pity every time either one is pulled, and it's ambiguous which one is treated as the most common (leftover) tier. Give each rarity a unique Tier value.");
+        }
 
-            if (rarity.useDynamicRate && rarity.dropRateCurve != null)
+        if (showDebugLogs)
+        {
+            foreach (var rarity in validRarities)
             {
-                int currentPity = pityCounters.TryGetValue(rarity, out int pity) ? pity : 0;
-                int pityGoal = Mathf.Max(1, rarity.pityPullCount);
-                float normalizedPity = Mathf.Clamp01((float)currentPity / pityGoal);
+                float currentDynamic = 0f;
+                float maxDynamic = 0f;
 
-                currentDynamic = rarity.dropRateCurve.Evaluate(normalizedPity);
-                maxDynamic = rarity.dropRateCurve.Evaluate(1f);
+                if (rarity.useDynamicRate && rarity.dropRateCurve != null)
+                {
+                    int currentPity = pityCounters.TryGetValue(rarity, out int pity) ? pity : 0;
+                    int pityGoal = Mathf.Max(1, rarity.pityPullCount);
+                    float normalizedPity = Mathf.Clamp01((float)currentPity / pityGoal);
+
+                    currentDynamic = rarity.dropRateCurve.Evaluate(normalizedPity);
+                    maxDynamic = rarity.dropRateCurve.Evaluate(1f);
+                }
+
+                float currentTotal = Mathf.Clamp01(rarity.baseDropRate + currentDynamic);
+                float maxTotal = Mathf.Clamp01(rarity.baseDropRate + maxDynamic);
+
+                string dynamicInfo = rarity.useDynamicRate ?
+                    $", Dynamic: +{currentDynamic:F4} (current), +{maxDynamic:F4} (max), Total: {currentTotal:F4} (current), {maxTotal:F4} (max)" :
+                    "";
+
+                Debug.Log($"[GachaSystem] {rarity.rarityName}: Base={rarity.baseDropRate:F4}{dynamicInfo}");
             }
-
-            float currentTotal = Mathf.Clamp01(rarity.baseDropRate + currentDynamic);
-            float maxTotal = Mathf.Clamp01(rarity.baseDropRate + maxDynamic);
-
-            string dynamicInfo = rarity.useDynamicRate ?
-                $", Dynamic: +{currentDynamic:F4} (current), +{maxDynamic:F4} (max), Total: {currentTotal:F4} (current), {maxTotal:F4} (max)" :
-                "";
-
-            Debug.Log($"[GachaSystem] {rarity.rarityName}: Base={rarity.baseDropRate:F4}{dynamicInfo}");
         }
 
         if (gachaPool != null)
