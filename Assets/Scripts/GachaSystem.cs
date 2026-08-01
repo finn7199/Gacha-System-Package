@@ -13,7 +13,6 @@ public class GachaSystem : MonoBehaviour
     [Header("Gacha Pool")]
     public List<GachaItem> gachaPool;
 
-    // Dictionary to track pity counters for each rarity
     private Dictionary<GachaRarity, int> pityCounters = new Dictionary<GachaRarity, int>();
     public int gachaTokens = 200;
 
@@ -28,8 +27,13 @@ public class GachaSystem : MonoBehaviour
             return;
         }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        if (Application.isPlaying) DontDestroyOnLoad(gameObject);
         InitializePityCounters();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
     }
 
     private void Start()
@@ -40,43 +44,105 @@ public class GachaSystem : MonoBehaviour
     private void InitializePityCounters()
     {
         pityCounters.Clear();
+        EnsurePityCountersInitialized();
+    }
+
+    // Adds a counter for any rarity that doesn't have one yet, without disturbing existing
+    // progress. Called before every pull so availableRarities can be assigned or changed after
+    // Awake (e.g. in tests, or tooling that builds the roster at runtime) without losing pity.
+    private void EnsurePityCountersInitialized()
+    {
+        if (availableRarities == null) return;
+
         foreach (var rarity in availableRarities)
         {
-            pityCounters[rarity] = 0;
+            if (rarity == null) continue;
+            if (!pityCounters.ContainsKey(rarity))
+            {
+                pityCounters[rarity] = 0;
+            }
         }
     }
 
     private void ValidateRarityConfiguration()
     {
-        float totalBaseRate = availableRarities.Sum(r => r.baseDropRate);
-        if (Mathf.Abs(totalBaseRate - 1f) > 0.01f)
+        if (availableRarities == null || availableRarities.Count == 0)
         {
-            Debug.LogError($"Total base drop rates ({totalBaseRate}) do not sum to 1! This will cause inconsistent pull results.");
+            Debug.LogWarning("[GachaSystem] No rarities configured!");
+            return;
+        }
 
-            // Normalize rates if they don't add up to 1
-            if (totalBaseRate > 0)
+        var validRarities = availableRarities.Where(r => r != null).ToList();
+        if (validRarities.Count != availableRarities.Count)
+        {
+            Debug.LogWarning("[GachaSystem] availableRarities contains empty slots. Fill or remove them.");
+        }
+
+        // Each tier is rolled independently, rarest first (see SelectHierarchicalRarity), so
+        // baseDropRate is a conditional "chance given no rarer tier already hit" rather than a
+        // marginal probability. These don't need to sum to 1, but a non-lowest tier sitting at
+        // or above 1.0 will make every tier below it unreachable except via its own pity.
+        var lowestTier = validRarities.OrderBy(r => r.rarityTier).FirstOrDefault();
+        foreach (var rarity in validRarities)
+        {
+            if (rarity != lowestTier && rarity.baseDropRate >= 1f)
             {
-                foreach (var rarity in availableRarities)
-                {
-                    rarity.baseDropRate /= totalBaseRate;
-                }
-                Debug.Log("Drop rates have been automatically normalized.");
+                Debug.LogWarning($"[GachaSystem] {rarity.rarityName} has baseDropRate >= 1.0, which makes every less-rare tier below it unreachable outside of pity.");
             }
         }
 
-        // Validate that we have items for each rarity
-        foreach (var rarity in availableRarities)
+        var duplicateNames = validRarities.GroupBy(r => r.rarityName).Where(g => g.Count() > 1);
+        foreach (var group in duplicateNames)
         {
-            int itemCount = gachaPool.Count(item => item.rarity == rarity);
-            if (itemCount == 0)
+            Debug.LogWarning($"[GachaSystem] Multiple rarities share the name '{group.Key}'. GetPityStatus() will merge them.");
+        }
+
+        foreach (var rarity in validRarities)
+        {
+            float currentDynamic = 0f;
+            float maxDynamic = 0f;
+
+            if (rarity.useDynamicRate && rarity.dropRateCurve != null)
             {
-                Debug.LogWarning($"No items found for rarity: {rarity.rarityName}. This rarity will never be pulled!");
+                int currentPity = pityCounters.TryGetValue(rarity, out int pity) ? pity : 0;
+                int pityGoal = Mathf.Max(1, rarity.pityPullCount);
+                float normalizedPity = Mathf.Clamp01((float)currentPity / pityGoal);
+
+                currentDynamic = rarity.dropRateCurve.Evaluate(normalizedPity);
+                maxDynamic = rarity.dropRateCurve.Evaluate(1f);
+            }
+
+            float currentTotal = Mathf.Clamp01(rarity.baseDropRate + currentDynamic);
+            float maxTotal = Mathf.Clamp01(rarity.baseDropRate + maxDynamic);
+
+            string dynamicInfo = rarity.useDynamicRate ?
+                $", Dynamic: +{currentDynamic:F4} (current), +{maxDynamic:F4} (max), Total: {currentTotal:F4} (current), {maxTotal:F4} (max)" :
+                "";
+
+            Debug.Log($"[GachaSystem] {rarity.rarityName}: Base={rarity.baseDropRate:F4}{dynamicInfo}");
+        }
+
+        if (gachaPool != null)
+        {
+            foreach (var rarity in validRarities)
+            {
+                int itemCount = gachaPool.Count(item => item != null && item.rarity == rarity);
+                if (itemCount == 0)
+                {
+                    Debug.LogWarning($"[GachaSystem] No items found for rarity: {rarity.rarityName}. This rarity will never be pulled!");
+                }
             }
         }
     }
 
     public List<GachaItem> PerformPull(int pullCount)
     {
+        if (pullCount <= 0)
+        {
+            if (showDebugLogs) Debug.LogWarning($"[GachaSystem] PerformPull called with non-positive pullCount ({pullCount}); ignoring.");
+            return new List<GachaItem>();
+        }
+
         if (gachaTokens < pullCount)
         {
             if (showDebugLogs) Debug.Log("Not enough tokens!");
@@ -100,114 +166,91 @@ public class GachaSystem : MonoBehaviour
 
     public GachaItem Pull()
     {
-        // Check pity guarantees first
+        if (availableRarities == null || !availableRarities.Any(r => r != null))
+        {
+            Debug.LogError("[GachaSystem] Cannot pull: no rarities configured.");
+            return null;
+        }
+
+        EnsurePityCountersInitialized();
+
+        // 1. Increment all pity counters first
+        foreach (var rarity in availableRarities)
+        {
+            if (rarity != null && rarity.usePitySystem && pityCounters.ContainsKey(rarity))
+            {
+                pityCounters[rarity]++;
+            }
+        }
+
+        // 2. Check for pity guarantees (Highest tier takes priority)
         GachaRarity guaranteedRarity = CheckPityGuarantees();
+
         if (guaranteedRarity != null)
         {
             if (showDebugLogs) Debug.Log($"Pity activated for {guaranteedRarity.rarityName}!");
-            ResetPityCounter(guaranteedRarity);
-
-            // Increment pity for other rarities
-            IncrementPityCountersExcept(guaranteedRarity);
-
+            ResetPityCountersAtOrBelow(guaranteedRarity);
             return GetRandomItemFromPool(guaranteedRarity);
         }
 
-        // Calculate adjusted drop rates based on dynamic rates
-        Dictionary<GachaRarity, float> adjustedRates = CalculateAdjustedRates();
+        // 3. Roll each tier independently, rarest first
+        GachaRarity selectedRarity = SelectHierarchicalRarity();
+        if (selectedRarity == null)
+        {
+            Debug.LogError("[GachaSystem] Cannot pull: no valid rarity resolved.");
+            return null;
+        }
 
-        // Normalize rates to ensure they sum to 1
-        NormalizeRates(adjustedRates);
-
-        // Select rarity based on adjusted rates
-        GachaRarity selectedRarity = SelectRarityFromAdjustedRates(adjustedRates);
-
-        // Update pity counters - reset for selected rarity, increment for others
-        ResetPityCounter(selectedRarity);
-        IncrementPityCountersExcept(selectedRarity);
+        ResetPityCountersAtOrBelow(selectedRarity);
 
         if (showDebugLogs) Debug.Log($"Pulled {selectedRarity.rarityName}");
 
         return GetRandomItemFromPool(selectedRarity);
     }
 
-    private Dictionary<GachaRarity, float> CalculateAdjustedRates()
+    // Rolls tiers rarest-first, each as an independent check (mirrors Genshin-style banners:
+    // the 5-star check happens first, then the 4-star check, etc.), rather than building one
+    // cumulative distribution. This keeps every tier's chance mathematically valid ([0,1]) on
+    // its own, regardless of what pity-driven bonuses other tiers are carrying that pull - no
+    // normalization step is needed, and the most common tier is simply whatever's left over
+    // once every rarer tier has failed its roll.
+    private GachaRarity SelectHierarchicalRarity()
     {
-        Dictionary<GachaRarity, float> adjustedRates = new Dictionary<GachaRarity, float>();
+        var sortedRarities = availableRarities.Where(r => r != null).OrderByDescending(r => r.rarityTier).ToList();
+        if (sortedRarities.Count == 0) return null;
 
-        foreach (var rarity in availableRarities)
+        GachaRarity lowestTier = sortedRarities[sortedRarities.Count - 1];
+
+        for (int i = 0; i < sortedRarities.Count - 1; i++)
         {
+            GachaRarity rarity = sortedRarities[i];
             float rate = rarity.baseDropRate;
 
-            // Apply dynamic rate adjustment if enabled
-            if (rarity.useDynamicRate && pityCounters.ContainsKey(rarity))
+            if (rarity.useDynamicRate && rarity.dropRateCurve != null && pityCounters.TryGetValue(rarity, out int currentPity))
             {
-                int currentPity = pityCounters[rarity];
-                float dynamicBonus = rarity.dropRateCurve.Evaluate((float)currentPity / rarity.pityPullCount);
-
-                // The dynamic rate should be a bonus on top of the base rate
-                rate += dynamicBonus;
-
-                if (showDebugLogs) Debug.Log($"{rarity.rarityName}: Base={rarity.baseDropRate:F4}, Dynamic={dynamicBonus:F4}, Total={rate:F4} (Pity: {currentPity}/{rarity.pityPullCount})");
-            }
-            else
-            {
-                if (showDebugLogs && pityCounters.ContainsKey(rarity))
-                    Debug.Log($"{rarity.rarityName}: {rate:F4} (Pity: {pityCounters[rarity]})");
+                int pityGoal = Mathf.Max(1, rarity.pityPullCount);
+                float normalizedPity = Mathf.Clamp01((float)currentPity / pityGoal);
+                rate += rarity.dropRateCurve.Evaluate(normalizedPity);
             }
 
-            adjustedRates[rarity] = Mathf.Clamp01(rate); // Ensure rate is between 0 and 1
-        }
+            rate = Mathf.Clamp01(rate);
 
-        return adjustedRates;
-    }
-
-    private void NormalizeRates(Dictionary<GachaRarity, float> rates)
-    {
-        float sum = rates.Values.Sum();
-        if (Mathf.Abs(sum - 1f) > 0.001f && sum > 0)
-        {
-            foreach (var rarity in rates.Keys.ToList())
-            {
-                rates[rarity] = rates[rarity] / sum;
-            }
-        }
-    }
-
-    private GachaRarity SelectRarityFromAdjustedRates(Dictionary<GachaRarity, float> adjustedRates)
-    {
-        float randomValue = Random.value;
-        float currentProbability = 0f;
-
-        // Sort rarities by tier to ensure consistent probability distribution
-        var sortedRarities = availableRarities.OrderBy(r => r.rarityTier).ToList();
-
-        foreach (var rarity in sortedRarities)
-        {
-            if (!adjustedRates.ContainsKey(rarity)) continue;
-
-            float rate = adjustedRates[rarity];
-            currentProbability += rate;
-
-            if (randomValue <= currentProbability)
+            if (Random.value < rate)
             {
                 return rarity;
             }
         }
 
-        // Fallback to highest tier rarity if we somehow miss all probabilities
-        var fallbackRarity = sortedRarities.LastOrDefault();
-        if (showDebugLogs) Debug.LogWarning($"Fallback to: {fallbackRarity?.rarityName ?? "null"}");
-        return fallbackRarity;
+        return lowestTier;
     }
 
     private GachaRarity CheckPityGuarantees()
     {
-        // Check rarities in descending order (highest tier first)
-        foreach (var rarity in availableRarities.OrderByDescending(r => r.rarityTier))
+        foreach (var rarity in availableRarities.Where(r => r != null).OrderByDescending(r => r.rarityTier))
         {
-            if (rarity.usePitySystem && pityCounters.ContainsKey(rarity) &&
-                pityCounters[rarity] >= rarity.pityPullCount)
+            if (rarity.usePitySystem &&
+                pityCounters.TryGetValue(rarity, out int currentPity) &&
+                currentPity >= Mathf.Max(1, rarity.pityPullCount))
             {
                 return rarity;
             }
@@ -215,32 +258,29 @@ public class GachaSystem : MonoBehaviour
         return null;
     }
 
-    private void ResetPityCounter(GachaRarity rarity)
+    // Obtaining a rarity satisfies the pity of every rarity at least as common (e.g. a 5-star
+    // pull also resets 4-star pity), matching how real gacha pity guarantees are scoped to
+    // "this tier or better" rather than an exact tier match.
+    private void ResetPityCountersAtOrBelow(GachaRarity obtainedRarity)
     {
-        if (pityCounters.ContainsKey(rarity))
-        {
-            pityCounters[rarity] = 0;
-        }
-    }
+        if (obtainedRarity == null) return;
 
-    private void IncrementPityCountersExcept(GachaRarity excludedRarity)
-    {
         foreach (var rarity in availableRarities)
         {
-            if (rarity != excludedRarity && rarity.usePitySystem && pityCounters.ContainsKey(rarity))
+            if (rarity != null && rarity.rarityTier <= obtainedRarity.rarityTier && pityCounters.ContainsKey(rarity))
             {
-                pityCounters[rarity]++;
+                pityCounters[rarity] = 0;
             }
         }
     }
 
     private GachaItem GetRandomItemFromPool(GachaRarity rarity)
     {
-        List<GachaItem> availableItems = gachaPool.Where(item => item.rarity == rarity).ToList();
+        List<GachaItem> availableItems = gachaPool.Where(item => item != null && item.rarity == rarity).ToList();
 
         if (availableItems.Count == 0)
         {
-            Debug.LogError($"No items found for rarity: {rarity.rarityName}");
+            Debug.LogError($"[GachaSystem] No items found for rarity: {rarity.rarityName}");
             return null;
         }
 
@@ -269,6 +309,10 @@ public class GachaSystem : MonoBehaviour
 
     private void OnValidate()
     {
+        if (Application.isPlaying)
+        {
+            InitializePityCounters();
+        }
         ValidateRarityConfiguration();
     }
 }
