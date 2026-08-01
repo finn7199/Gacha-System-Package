@@ -1,110 +1,78 @@
 # Gacha System Unity Package
 
-A customizable gacha system for Unity, perfect for any project needing a gacha mechanic. This system provides flexible pull options, rarity configurations, and planned support for future enhancements.
+A drop-in gacha (loot box) system for Unity. No coding required — configure everything from the Inspector.
 
 ---
 
-## 	Features
+## Features
 
-### Current Features
-- **Custom Pull Counts**: Perform pulls of any size, from single pulls to multi pulls (e.g., 1, 2, 10, ... n).
-- **Configurable Pity System**: Configure thresholds and drop rates directly from the Inspector.
-- **Scriptable Objects for Items**: Add gacha items like characters or weapons with minimal effort.
-- **Custom Rarity Support (New!)**  
-  Define your **own rarities** by creating new Rarity ScriptableObjects:
-  - Set custom names, drop rates, and order.
-  - No need to modify the core code — just create and configure your rarities via the Inspector!
-- Support for dynamic curves to adjust drop rates.
-- **Live rate preview**: the GachaManager Inspector shows a table of every rarity's actual pull chance, so you can see your real odds without doing any math.
-- **Tier assist**: each Rarity asset shows every tier used across the project so you can't accidentally leave two rarities colliding on the same number, plus a one-click "use next free tier" button. The GachaManager Inspector can also renumber tiers to match your list order.
+- **Pull however many you want** — single pulls, 10-pulls, anything.
+- **Custom rarities** — create your own rarity tiers (R, SR, SSR, whatever) as Scriptable Objects, no code changes needed.
+- **Pity system** — guarantee a rarity after N pulls, configurable per rarity.
+- **Dynamic rates** — optionally increase a rarity's chance the longer someone goes without it, using a curve.
+- **Live rate preview** — the GachaManager Inspector shows a table of every rarity's real drop chance, so you always know your actual odds.
+- **Tier helper** — see every tier number already in use across your project, so you don't accidentally reuse one by mistake.
 
 ---
 
 ## How Drop Rates Work
 
-Each rarity's **Drop Rate** is checked **from rarest to most common**, one coin flip at a time — it is *not* a slice of a 100% pie, and your rarities do **not** need to add up to 100%.
+Drop rates are checked **one rarity at a time, rarest first** — think of it like a chain of coin flips, not slices of a pie. Your rates do **not** need to add up to 100%.
 
-For example, with R = 90%, SR = 9%, SSR = 1%:
-1. First, the SSR check runs: 1% chance to stop here.
-2. If SSR didn't hit, the SR check runs: 9% chance to stop here.
-3. If neither hit, you get R.
+Example: R = 90%, SR = 9%, SSR = 1%
 
-Your **most common rarity** (the one with the lowest Tier number) doesn't get its own check at all — it's simply whatever's left after every rarer rarity's check fails. You can leave its Drop Rate slider at any value; it has no effect. The GachaManager Inspector's rate table shows you the *actual* chance each rarity has once this rolls out (SSR 1%, SR 8.91%, R 90.09% in the example above) so you never have to compute it by hand.
+1. Check SSR first — 1% chance to land here.
+2. Didn't land SSR? Check SR — 9% chance.
+3. Didn't land either? You get R.
+
+Your **most common rarity** (lowest Tier number) doesn't get checked at all — it's just whatever's left over. You can leave its Drop Rate at anything; it won't matter.
+
+Don't want to do the math? Open your GachaManager — the Inspector shows each rarity's *real* chance (in the example above: SSR 1%, SR 8.91%, R 90.09%).
 
 ---
 
 ## Rarity Tiers
 
-Only the **relative order** of `Tier` matters — 1/2/3 behaves identically to 10/20/30, as long as the numbers are in the right order. But leaving two rarities on the same Tier (including the default of 0) isn't harmless: it also makes those two rarities reset each other's Pity every time either one is pulled, and if every rarity is left at the same Tier, Pity never triggers at all.
+`Tier` decides the order rarities are checked in — **lower Tier = more common**. Only the order matters, not the exact numbers (1/2/3 works exactly like 10/20/30).
 
-Each Rarity asset's Inspector shows every Tier already used across your project, so you can spot collisions and pick a free number without guessing. If you'd rather not type numbers at all, drag your rarities into order (most common at the top) in the GachaManager's Available Rarities list, then click **Renumber Tiers from List Order**.
+One thing to watch out for: if two rarities share the same Tier (including if you just leave everything at the default, `0`), they'll reset each other's pity every pull, and pity may never trigger. To help avoid this, each Rarity asset shows you every Tier already used in your project, so you can pick a free one instead of guessing.
 
----
-
-### Upcoming Features
-1. **Firebase Integration**:
-   - Store and manage gacha results, user pulls, and token data securely in the cloud.
-2. **Inspector-Friendly Enhancements**:
-   - Dedicated Unity Editor tools for setting up gacha configurations faster.
+Prefer not to type numbers at all? Drag your rarities into order (most common on top) in the GachaManager's list, then hit **Renumber Tiers from List Order**.
 
 ---
 
-## How to Use
+## Getting Started
 
-### Setup Instructions
+1. **Import the package** — grab the latest `.unitypackage` from [Releases](https://github.com/finn7199/Gacha-System-Package/releases) and import it into your project.
+2. **Add the GachaManager** — create an empty GameObject, name it `GachaManager`, and attach the `GachaSystem` script.
+3. **Create your rarities** — right-click in the Project window → `Create > Gacha System > Gacha Rarity`. Set a name, drop rate, and tier for each.
+4. **Create your items** — right-click → `Create > Gacha System > Gacha Item`. Give each one a name and assign it a rarity.
+5. **Wire it all up** — on the `GachaManager`, add your rarities and items to their lists in the Inspector.
 
-### Download the Package
-- Find the latest releases under the [Releases](https://github.com/finn7199/Gacha-System-Package/releases) section.
-- Import the downloaded package into your Unity project.
+That's it — no code required to configure your gacha pool.
 
-### Add the Gacha System Script
+---
 
--   Create an empty GameObject in your scene and name it **GachaManager**.
--   Attach the `GachaSystem.cs` script to this GameObject.
+## Performing Pulls (Code)
 
-### Create Gacha Items
+```csharp
+List<GachaItem> results = GachaSystem.Instance.PerformPull(n);
+```
 
--   Use **Scriptable Objects** to define your gacha items:
-    1.  Right-click in the Project window.
-    2.  Go to **Create > Gacha System > Gacha Item**.
-    3.  Fill out the fields (e.g., item name & rarity) in the Inspector.
+Replace `n` with how many pulls to do (`1` for a single pull, `10` for a multi-pull). You get back the list of items pulled.
 
-### (V1.1.0) Create Custom Rarities
+### Hooking it up to a button
 
-- Right-click in the Project window.
-- Go to **Create > Gacha System > Gacha Rarity**.
-- Define custom rarity names and drop rates.
-- Add new rarities to the system without modifying the core code!
-  
-### Add Items and Rarities to the Pool
+1. Add a UI Button to your scene.
+2. Write a small script with a method that calls `GachaSystem.Instance.PerformPull(n)`.
+3. Link that method to the button's `OnClick()` event.
 
--   In the **GachaManager**, add all your created Gacha Items and Rarities to the list in the Inspector.
+---
 
-### Perform Pulls
-
--   Use the following method to perform gacha pulls:    
-    `GachaSystem.Instance.PerformPull(n);` 
-    
-    -   Replace `n` with the number of pulls (e.g., `1` for a single pull, `10` for a batch pull).
-    -   The method returns a list of pulled **GachaItem** objects.
-
-----------
-
-### Example: Button Click
-
--   To trigger pulls from a button click:
-    1.  Add a UI Button to your scene.
-    2.  Add a script with a method that calls `GachaSystem.Instance.PerformPull(n)` and link it to the button's **OnClick()** event.
-    3.  Set the number of pulls for that button.
- 
-
-----------
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+MIT — see [LICENSE](LICENSE.txt).
 
-----------
-## Contributions & Feedback
+## Found a Bug? Have an Idea?
 
-Found a bug? Have a feature suggestion?  
-Feel free to open an [Issue](https://github.com/finn7199/Gacha-System-Package/issues) or submit a [Pull Request](https://github.com/finn7199/Gacha-System-Package/pulls)!
+Open an [Issue](https://github.com/finn7199/Gacha-System-Package/issues) or send a [Pull Request](https://github.com/finn7199/Gacha-System-Package/pulls).
